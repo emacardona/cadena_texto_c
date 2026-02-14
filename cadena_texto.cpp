@@ -1,8 +1,13 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include <cwctype>
+#include <cwctype> 
 #include <clocale>
+
+#ifdef _WIN32
+    #include <io.h>      
+    #include <fcntl.h>
+#endif
 
 using namespace std;
 
@@ -15,25 +20,39 @@ bool esDebil(wchar_t c) {
 }
 
 bool esTildada(wchar_t c) {
-    return wstring(L"íúÍÚ").find(c) != wstring::npos;
+    return wstring(L"íúÍÚáéóÁÉÓüÜ").find(c) != wstring::npos;
 }
 
 int main() {
+    
+#ifdef _WIN32
+    _setmode(_fileno(stdout), _O_U16TEXT);
+    _setmode(_fileno(stdin), _O_U16TEXT);
+#else
     setlocale(LC_ALL, "");
+#endif
 
     wchar_t opcion = L's';
 
     while (opcion == L's' || opcion == L'S') {
         
-        wcout << L"\033[2J\033[1;1H";
+        wcout << L"\n\n"; 
         wcout << L"****************************************" << endl;
         wcout << L"********* ANALIZADOR DE TEXTO *********" << endl;
         wcout << L"****************************************" << endl;
         wcout << L"Escribe tu frase y presiona ENTER:" << endl;
 
         wstring texto;
+
+#ifdef _WIN32
+        getline(wcin, texto);
+        if (texto.empty()) {
+            getline(wcin, texto);
+        }
+#else
         wcin >> ws;
         getline(wcin, texto);
+#endif
 
         int palabras = 0, espacios = 0, saltos = 0;
         int vocalesMin = 0, vocalesMay = 0, numeros = 0, signos = 0;
@@ -56,7 +75,8 @@ int main() {
             if (wstring(L"aeiou").find(letra) != wstring::npos) vocalesMin++;
             if (wstring(L"AEIOU").find(letra) != wstring::npos) vocalesMay++;
 
-            if (iswalpha(letra)) {
+            // Condición para que no se corten las palabras con tildes o eñes
+            if (iswalpha(letra) || esTildada(letra) || letra == L'ñ' || letra == L'Ñ') {
                 palabraActual += letra;
             } 
             else if (palabraActual.length() > 0) {
